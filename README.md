@@ -1,17 +1,3 @@
-# converter_AUMC
-
-A small shell-based wrapper for reproducible, subject-wise neuroimaging
-conversion at Amsterdam UMC workflows.
-
-The repository is deliberately simple: **one command in, one organized output
-location out**. The current scaffold uses `dcm2niix` as the conversion backend
-and separates machine-specific settings from version-controlled logic.
-
-> **Status**
-> This is a clean shell scaffold for the AUMC conversion workflow. Add any
-> project-specific sequence mapping / renaming rules to the modular scripts
-> rather than hard-coding them into the command-line entry point.
-
 ## Workflow
 
 ```text
@@ -168,8 +154,6 @@ DICOM_OVERWRITE=n
 
 Do **not** commit `config/local.env` if it contains local paths or sensitive
 information.
-
-## Integrating existing AUMC conversion rules
 
 The safest place to preserve existing project-specific logic is
 `scripts/convert_subject.sh`, or a new dedicated stage such as:

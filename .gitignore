@@ -1,0 +1,21 @@
+# Local/private data
+private/
+local/
+work/
+output/
+
+# Environment overrides / secrets
+.env
+config/local.env
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*~

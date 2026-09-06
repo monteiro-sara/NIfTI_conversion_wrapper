@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+BIN_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${BIN_DIR}/.." && pwd)"
+
+# shellcheck source=scripts/helpers.sh
+source "${PROJECT_ROOT}/scripts/helpers.sh"
+# shellcheck source=scripts/validate_input.sh
+source "${PROJECT_ROOT}/scripts/validate_input.sh"
+# shellcheck source=scripts/convert_subject.sh
+source "${PROJECT_ROOT}/scripts/convert_subject.sh"
+
+usage() {
+  cat <<'USAGE'
+AUMC Converter — safe shell wrapper for subject-wise imaging conversion
+
+Usage:
+  aumc-convert --input DIR --output DIR --subject ID [options]
+
+Required:
+  -i, --input DIR       Source directory for one subject/session
+  -o, --output DIR      Root output directory
+  -s, --subject ID      Subject identifier (e.g. sub-001 or 001)
+
+Options:
+      --session ID      Optional session identifier (e.g. ses-01)
+      --config FILE     Read settings from FILE instead of config/local.env
+      --dry-run         Print the conversion command without running it
+      --force           Allow output directory to already exist
+  -h, --help            Show this help
+
+Examples:
+  ./bin/aumc-convert -i /data/raw/001 -o /data/converted -s 001
+
+  ./bin/aumc-convert \
+      --input /data/raw/001/session1 \
+      --output /data/converted \
+      --subject sub-001 \
+      --session ses-01 \
+      --dry-run
+
+Notes:
+  * The default backend is dcm2niix.
+  * Machine-specific settings belong in config/local.env (git-ignored).
+  * The wrapper refuses to write into an existing subject/session output
+    unless --force is provided.
+USAGE
+}
+
+INPUT=""
+OUTPUT_ROOT=""
+SUBJECT=""
+SESSION=""
+CONFIG_FILE="${PROJECT_ROOT}/config/local.env"
+DRY_RUN=0
+FORCE=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -i|--input)   [[ $# -ge 2 ]] || die "$1 requires a value"; INPUT=$2; shift 2 ;;
+    -o|--output)  [[ $# -ge 2 ]] || die "$1 requires a value"; OUTPUT_ROOT=$2; shift 2 ;;
+    -s|--subject) [[ $# -ge 2 ]] || die "$1 requires a value"; SUBJECT=$2; shift 2 ;;
+    --session)    [[ $# -ge 2 ]] || die "$1 requires a value"; SESSION=$2; shift 2 ;;
+    --config)     [[ $# -ge 2 ]] || die "$1 requires a value"; CONFIG_FILE=$2; shift 2 ;;
+    --dry-run)    DRY_RUN=1; shift ;;
+    --force)      FORCE=1; shift ;;
+    -h|--help)    usage; exit 0 ;;
+    *)            die "Unknown argument: $1 (use --help)" ;;
+  esac
+done
+
+[[ -n "$INPUT" ]] || die "--input is required"
+[[ -n "$OUTPUT_ROOT" ]] || die "--output is required"
+[[ -n "$SUBJECT" ]] || die "--subject is required"
+
+load_config "$CONFIG_FILE"
+
+INPUT=$(abspath "$INPUT")
+OUTPUT_ROOT=$(abspath "$OUTPUT_ROOT")
+
+validate_input_dir "$INPUT"
+validate_subject_id "$SUBJECT"
+[[ -z "$SESSION" ]] || validate_subject_id "$SESSION"
+
+SUBJECT_DIR="$OUTPUT_ROOT/$SUBJECT"
+if [[ -n "$SESSION" ]]; then
+  TARGET_DIR="$SUBJECT_DIR/$SESSION"
+else
+  TARGET_DIR="$SUBJECT_DIR"
+fi
+
+validate_output_target "$TARGET_DIR" "$FORCE"
+
+printf '\nAUMC CONVERTER\n'
+printf '%s\n' '--------------'
+print_kv "subject" "$SUBJECT"
+print_kv "session" "${SESSION:-—}"
+print_kv "input" "$INPUT"
+print_kv "output" "$TARGET_DIR"
+print_kv "mode" "$([[ "$DRY_RUN" -eq 1 ]] && printf 'dry-run' || printf 'convert')"
+printf '\n'
+
+convert_subject "$INPUT" "$TARGET_DIR" "$SUBJECT" "$DRY_RUN"
+
+if [[ "$DRY_RUN" -eq 0 ]]; then
+  file_count=$(find "$TARGET_DIR" -type f | wc -l | tr -d ' ')
+  printf '\nDONE\n'
+  print_kv "files written" "$file_count"
+  print_kv "output" "$TARGET_DIR"
+fi

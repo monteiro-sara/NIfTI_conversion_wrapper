@@ -24,9 +24,9 @@ Full workflow notes: [`docs/workflow.md`](docs/workflow.md)
 ## Repository layout
 
 ```text
-converter_AUMC/
+converter/
 ├── bin/
-│   └── aumc-convert          # public command-line entry point
+│   └── convert          
 ├── scripts/
 │   ├── helpers.sh            # logging + utility functions
 │   ├── validate_input.sh     # fail-fast input checks
@@ -66,7 +66,7 @@ The entry point is already executable in the repository. If permissions are
 lost during transfer:
 
 ```bash
-chmod +x bin/aumc-convert scripts/*.sh
+chmod +x bin/convert scripts/*.sh
 ```
 
 Optional machine-specific configuration:
@@ -81,7 +81,7 @@ paths or converter flags.
 ## Usage
 
 ```bash
-./bin/aumc-convert \
+./bin/convert \
   --input /path/to/source/sub-001 \
   --output /path/to/converted \
   --subject sub-001
@@ -90,7 +90,7 @@ paths or converter flags.
 With a session:
 
 ```bash
-./bin/aumc-convert \
+./bin/convert \
   --input /path/to/source/sub-001/session1 \
   --output /path/to/converted \
   --subject sub-001 \
@@ -112,7 +112,7 @@ The resulting structure is:
 Before running a large conversion, inspect the exact command:
 
 ```bash
-./bin/aumc-convert \
+./bin/convert \
   --input /path/to/source/sub-001 \
   --output /path/to/converted \
   --subject sub-001 \
@@ -169,7 +169,7 @@ The command-line interface can then remain stable while those internals evolve.
 ## Help
 
 ```bash
-./bin/aumc-convert --help
+./bin/convert --help
 ```
 
 ## License
